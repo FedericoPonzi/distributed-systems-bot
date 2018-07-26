@@ -92,7 +92,7 @@ func (repo *MysqlRepository) addFeedRssVisited(feed_id int, updated *time.Time) 
 
 func (repo *MysqlRepository) getLastFeedRssUpdatedByFeedId(id int) (t time.Time) {
 	log.Println("Looking for last update for visited: ", id)
-	err := repo.db.QueryRow("select updated from feed_rss_visited where feed_id = ? limit 1;", id).Scan(&t)
+	err := repo.db.QueryRow("select updated from feed_rss_visited where feed_id = ? order by id desc limit 1;", id).Scan(&t)
 	if err != nil {
 		log.Println("getLastFeedRssUpdatedByFeedId: error ", err)
 		t = time.Now() // Because probably this is a new feed rss source.

@@ -30,7 +30,7 @@ func (handler FeedHandler) main() {
 	handler.saveLastFetched(feeds)
 	feedItemsToPublish := handler.getUpdatedItems(feeds)
 	if len(feedItemsToPublish) > 0 {
-		log.Println("Done iterating on items to publish.", feedItemsToPublish[0].Title)
+		log.Println("Done iterating on items to publish. ", feedItemsToPublish[0].Title)
 		link := "https://ds.fponzi.me/" + shortlinkService.generateShortlink(feedItemsToPublish[0])
 		handler.twitterHandler.publishLinkWithTitle("This is a test. Sorry for the inconvenience." + feedItemsToPublish[0].Title, link)
 	}
@@ -46,6 +46,7 @@ func (handler FeedHandler) getUpdatedFeedsItemWorker(jobs <-chan FeedUpdatedWork
 
 		feed := j.feed
 		if lastUpdated.Before(*feed.updated) {
+			log.Println("(",j.feed.id,  ") has updates! Last tweeted post was from ", lastUpdated, " now is ", feed.updated)
 			for _, feedItem := range feed.items {
 
 				if (feedItem.UpdatedParsed != nil && lastUpdated.Before(*feed.updated)) ||
@@ -56,7 +57,7 @@ func (handler FeedHandler) getUpdatedFeedsItemWorker(jobs <-chan FeedUpdatedWork
 
 			}
 		}else {
-			log.Println("It was updated after: ", lastUpdated, " is after: ", feed.updated)
+			log.Println("(",j.feed.id,  ") was updated after: ", lastUpdated, " is after: ", feed.updated)
 		}
 	}
 	wg.Done()
@@ -141,8 +142,6 @@ func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) 
 	if feed == nil{ // TODO. check err status.
 		return
 	}
-	fmt.Println("Title: ", feed.Title)
-	//fmt.Println(feed.UpdatedParsed)
 	updated := feed.PublishedParsed
 	if feed.UpdatedParsed != nil {
 		updated = feed.UpdatedParsed
