@@ -1,0 +1,14 @@
+  twitter:
+    consumerKey:
+    consumerSecret:
+    token:
+    tokenSecret:
+  telegram:
+    apiKey:
+    userId:
+  mysql:
+    username:
+    password:
+    host: 127.0.0.1
+    port: 3306
+    dbName:
