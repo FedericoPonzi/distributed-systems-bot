@@ -6,24 +6,43 @@ import (
 )
 import (
 	_ "github.com/go-sql-driver/mysql"
+	"flag"
 )
-var config *Config
+
+
+
+var configPath string
+var fetchRssRun bool
+func parseArgs() {
+	flag.StringVar(&configPath, "config", "config.yaml", "Complete path to the config yaml file.")
+	flag.BoolVar(&fetchRssRun, "fetch-rss", false, "Fetch feed rss")
+}
 
 func main() {
 	fmt.Println("Welcome to DistributedSystems bot!")
-	var err  error
-	config, err = loadConfig("config.yaml")
+	parseArgs()
+	fmt.Println(configPath)
+
+	config, err := loadConfig(configPath)
+
+	config.getDbConnectionString()
+
 	if err != nil {
-		log.Fatal("Error loading config", err)
+		log.Fatal("Error loading config: ", err)
 	}
-	repo := NewMysqlRepository()
-	defer repo.close()
-	defer func() {	log.Println("End of the execution. Thanks for playing :)")
+
+	repo := NewMysqlRepository(config)
+
+	defer func() {
+		repo.close()
+		log.Println("End of the execution. Thanks for playing :)")
+
 	}()
 	twitterHandler := NewTwitterHandler(config.Twitter)
-
-	feedHandler := NewFeedHandler(repo, twitterHandler)
-	feedHandler.main()
+	if(fetchRssRun) {
+		feedHandler := NewFeedHandler(repo, twitterHandler)
+		feedHandler.main()
+	}
 	//fmt.Println("Going to publish:", feedHandler.getUpdatedItems(feedHandler.fetchAllRss()))
 	//
 	//go twitterHandler.runStreaming();
@@ -33,14 +52,4 @@ func main() {
 	//telegramBot.run()
 	//https://stackoverflow.com/questions/38386762/running-code-at-noon-in-golang
 
-	/*url := "https://blog.acolyer.org/feed/"
-	fp := gofeed.NewParser()
-	feed, _ := fp.ParseURL(url)
-	fmt.Println(feed.Updated)
-	*/
-
-
 }
-
-
-

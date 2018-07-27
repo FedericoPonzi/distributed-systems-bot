@@ -10,9 +10,9 @@ type MysqlRepository struct {
 	db *sql.DB
 }
 
-func NewMysqlRepository() (mysqlRepository *MysqlRepository) {
+func NewMysqlRepository(config *Config) (mysqlRepository *MysqlRepository) {
 
-	return &MysqlRepository{connectDb()}
+	return &MysqlRepository{connectDb(config.getDbConnectionString())}
 }
 
 type FeedRss struct {
@@ -30,9 +30,8 @@ type Shortlink struct {
 	clicks   int
 }
 
-func connectDb() *sql.DB {
-	db, err := sql.Open("mysql", config.getDbConnectionString())
-	log.Println(config.getDbConnectionString())
+func connectDb(connection string) *sql.DB {
+	db, err := sql.Open("mysql", connection)
 	if err != nil {
 		log.Fatal("Impossible open db: ", err)
 	}

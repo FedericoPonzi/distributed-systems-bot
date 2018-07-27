@@ -2,9 +2,9 @@ package main
 
 import (
 	"github.com/go-yaml/yaml"
+	"io/ioutil"
 	"log"
 	"os"
-	"io/ioutil"
 )
 
 type TwitterConfig struct {
@@ -22,16 +22,16 @@ type MysqlConfig struct {
 	Password string `yaml:"password"`
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
-	DbName	 string `yaml:"dbName"`
+	DbName   string `yaml:"dbName"`
 }
 type Config struct {
 	Twitter  TwitterConfig  `yaml:"twitter"`
 	Telegram TelegramConfig `yaml:"telegram"`
-	Mysql    MysqlConfig	`yaml:"mysql"`
+	Mysql    MysqlConfig    `yaml:"mysql"`
 }
 
-func (conf *Config) getDbConnectionString() string{
-	return config.Mysql.Username + ":" + config.Mysql.Password + "@tcp(" + config.Mysql.Host + ":" + config.Mysql.Port +")/" + config.Mysql.DbName + "?parseTime=true"
+func (config *Config) getDbConnectionString() string {
+	return config.Mysql.Username + ":" + config.Mysql.Password + "@tcp(" + config.Mysql.Host + ":" + config.Mysql.Port + ")/" + config.Mysql.DbName + "?parseTime=true"
 }
 
 func loadConfig(configFileName string) (config *Config, err error) {
