@@ -16,6 +16,7 @@ var fetchRssRun bool
 func parseArgs() {
 	flag.StringVar(&configPath, "config", "config.yaml", "Complete path to the config yaml file.")
 	flag.BoolVar(&fetchRssRun, "fetch-rss", false, "Fetch feed rss")
+	flag.Parse()
 }
 
 func main() {
@@ -24,8 +25,6 @@ func main() {
 	fmt.Println(configPath)
 
 	config, err := loadConfig(configPath)
-
-	config.getDbConnectionString()
 
 	if err != nil {
 		log.Fatal("Error loading config: ", err)
@@ -38,8 +37,10 @@ func main() {
 		log.Println("End of the execution. Thanks for playing :)")
 
 	}()
+
 	twitterHandler := NewTwitterHandler(config.Twitter)
-	if(fetchRssRun) {
+
+	if fetchRssRun {
 		feedHandler := NewFeedHandler(repo, twitterHandler)
 		feedHandler.main()
 	}
