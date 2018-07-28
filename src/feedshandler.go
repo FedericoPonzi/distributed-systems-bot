@@ -77,25 +77,28 @@ func (handler FeedHandler) getUpdatedItems(feedsFetched[] *FeedRssWrapper) (feed
 	results := make(chan gofeed.Item, 100)
 	wg := new(sync.WaitGroup)
 
-	for w := 1; w <= 3; w++ {
+	for w := 0; w < 4; w++ {
+		wg.Add(1)
 		go handler.getUpdatedFeedsItemWorker(jobs, results, wg)
 	}
 
 	for _, feed := range feedsFetched {
-		wg.Add(1)
 		lastUpdated := handler.repo.getLastFeedRssUpdatedByFeedId(feed.id)
 		jobs <- FeedUpdatedWorkUnit{lastUpdated: lastUpdated, feed:feed}
 	}
+	log.Println("done sending jobs.")
 	close(jobs)
 
 	go func() {
 		wg.Wait()
+		log.Println("I'm done waiting.")
 		close(results)
 	}()
 
 	for res := range results {
 		feedItemsToPublish = append(feedItemsToPublish, res)
 	}
+	log.Println("done computing updated items")
 
 	return feedItemsToPublish
 }
