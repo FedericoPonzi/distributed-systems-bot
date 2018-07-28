@@ -24,14 +24,21 @@ func NewFeedHandler (repo *MysqlRepository, twitterHandler *TwitterHandler) *Fee
 	return &FeedHandler{repo, twitterHandler}
 }
 func (handler FeedHandler) main() {
+	/** Download all feeds. **/
 	feeds := handler.fetchAllRss()
-	shortlinkService := NewShortLinkService(handler.repo)
 
-	handler.saveLastFetched(feeds)
+	/** Init short link service **/
+	shortlinkService := NewShortLinkService(handler.repo)
+	/** Get the feedsItem to publish from the feed (compare updated value of last time, with feeds/items published time) **/
 	feedItemsToPublish := handler.getUpdatedItems(feeds)
+
+	/** Save fetched rss results **/
+	handler.saveLastFetched(feeds)
+
+	/** If there are items to publish, do it. **/
 	if len(feedItemsToPublish) > 0 {
 		log.Println("Done iterating on items to publish. ", feedItemsToPublish[0].Title)
-		link := "https://ds.fponzi.me/" + shortlinkService.generateShortlink(feedItemsToPublish[0])
+		link := shortlinkService.generateShortlink(feedItemsToPublish[0])
 		handler.twitterHandler.publishLinkWithTitle("This is a test. Sorry for the inconvenience." + feedItemsToPublish[0].Title, link)
 	}
 	//handler.scheduleTweets(feedItemsToPublish)
@@ -49,8 +56,7 @@ func (handler FeedHandler) getUpdatedFeedsItemWorker(jobs <-chan FeedUpdatedWork
 			log.Println("(",j.feed.id,  ") has updates! Last tweeted post was from ", lastUpdated, " now is ", feed.updated)
 			for _, feedItem := range feed.items {
 
-				if (feedItem.UpdatedParsed != nil && lastUpdated.Before(*feed.updated)) ||
-					(feedItem.PublishedParsed != nil && lastUpdated.Before(*feedItem.PublishedParsed)){
+				if feedItem.PublishedParsed != nil && lastUpdated.Before(*feedItem.PublishedParsed){
 					fmt.Println("This item is in queue for post:", feedItem.Link)
 					results <- *feedItem
 				}

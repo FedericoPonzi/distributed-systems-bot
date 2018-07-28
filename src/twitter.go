@@ -124,10 +124,16 @@ func (twitterHandler * TwitterHandler) runStreaming(){
 
 }
 func (handler *TwitterHandler) publishLinkWithTitle(title string, link string) {
-	if len(title) > 254 { // links uses 23 chars - not metters their length. So we have max 257 chars for tweet text. We need space for '...\n'
-		title = title[:254]
+	/**
+		Links uses 23 chars
+		So we have max 257 chars for tweet text. 1 chars for new line, so 256.
+		if the length of title is greater then 256 chars, then we need to append "..." so 256-3.
+	 */
+	if len(title) > 256 {
+		title = title[:256-4] + "..." //4 and not 3, because arrays start from 0.
 	}
-	tweet := title + "...\n" + link
+	tweet := title + "\n" + link
+	//TODO: save tweet in db!
 	res, resp, err := handler.bot.Statuses.Update(tweet, nil)
 	fmt.Println(res, resp, err)
 
