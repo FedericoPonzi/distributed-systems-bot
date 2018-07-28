@@ -47,7 +47,7 @@ func main() {
 	//fmt.Println("Going to publish:", feedHandler.getUpdatedItems(feedHandler.fetchAllRss()))
 	//
 	//go twitterHandler.runStreaming();
-	//twitterHandler.runStreaming()
+	//twitterHandler.runStreaming()/home/bots/distributed-systems-bot/src/distributed-systems-bot --fetch-rss --config /home/bots/distributed-systems-bot/src/config.yaml 2>&1 > /home/bots/distributed-systems-bot/output
 
 	//telegramBot := NewTelegramHandler(config.Telegram, twitterHandler)
 	//telegramBot.run()

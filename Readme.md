@@ -3,7 +3,7 @@
 
 This bot has the following aims:
 
- 1. Tweet links from feeds of interesting websites
+ 1. Tweet links from feeds of interesting websites. [Done]
  1. Retweet and like "interesting" tweets
  3. Schedule posts based on a publication timetable (with exceptions - like "publish now"), made from a Telegram bot interface.
  4. Save every tweet in the database, to do some analysis - based on interactions.

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/mmcdole/gofeed"
 	"strings"
+	"encoding/base64"
 )
 
 type ShortlinkService struct {
@@ -19,7 +20,7 @@ func NewShortLinkService(repo *MysqlRepository) (*ShortlinkService) {
 func (service *ShortlinkService) generateShortlink(item gofeed.Item) (string){
 	t := item.Title
 
-	id := "first-" + formatTitleForUrl(t)
+	id := randString(t, 6) + "-" + formatTitleForUrl(t)
 	service.repo.addShortlink(id, item.Link)
 
 	return id
@@ -34,3 +35,11 @@ func formatTitleForUrl(title string) (url  string){
 	return url
 }
 
+
+
+func randString(s string, maxChars int) string {
+	if len(s) > maxChars {
+		maxChars = len(s)
+	}
+	return base64.StdEncoding.EncodeToString([]byte(s))[:maxChars]
+}

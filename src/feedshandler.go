@@ -141,7 +141,7 @@ func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) 
 	//fatalIfErr(err)
 	if feed == nil{ // TODO. check err status.
 		return
-	}
+	}c
 	updated := feed.PublishedParsed
 	if feed.UpdatedParsed != nil {
 		updated = feed.UpdatedParsed
