@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"strings"
 )
 
 type FeedRssWrapper struct {
@@ -56,11 +57,11 @@ func (handler FeedHandler) getUpdatedFeedsItemWorker(jobs <-chan FeedUpdatedWork
 			log.Println("(",j.feed.id,  ") has updates! Last tweeted post was from ", lastUpdated, " now is ", feed.updated)
 			for _, feedItem := range feed.items {
 
-				if feedItem.PublishedParsed != nil && lastUpdated.Before(*feedItem.PublishedParsed){
+				if feedItem.PublishedParsed != nil && lastUpdated.Before(*feedItem.PublishedParsed) &&
+					strings.Contains(feedItem.Title, "Sponsored"){
 					fmt.Println("This item is in queue for post:", feedItem.Link)
 					results <- *feedItem
 				}
-
 			}
 		}else {
 			log.Println("(",j.feed.id,  ") was updated after: ", lastUpdated, " is after: ", feed.updated)
