@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Jul 29, 2018 at 08:41 PM
+-- Generation Time: Jul 29, 2018 at 08:45 PM
 -- Server version: 5.7.22-0ubuntu0.16.04.1-log
 -- PHP Version: 7.0.30-0ubuntu0.16.04.1
 
@@ -21,6 +21,11 @@ SET time_zone = "+00:00";
 --
 
 --
+-- Truncate table before insert `feed_category`
+--
+
+TRUNCATE TABLE `feed_category`;
+--
 -- Dumping data for table `feed_category`
 --
 
@@ -29,6 +34,11 @@ INSERT INTO `feed_category` (`id`, `name`) VALUES
 (2, 'Corporate News Feeds'),
 (3, 'Engineering Blog');
 
+--
+-- Truncate table before insert `feed_rss`
+--
+
+TRUNCATE TABLE `feed_rss`;
 --
 -- Dumping data for table `feed_rss`
 --
