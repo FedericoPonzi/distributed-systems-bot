@@ -53,6 +53,11 @@ func (handler FeedHandler) getUpdatedFeedsItemWorker(jobs <-chan FeedUpdatedWork
 		lastUpdated := j.lastUpdated
 
 		feed := j.feed
+
+		if feed.updated == nil {
+
+			log.Println(feed.id, ": Updated nill.")
+		}
 		if lastUpdated.Before(*feed.updated) {
 			log.Println("(",j.feed.id,  ") has updates! Last tweeted post was from ", lastUpdated, " now is ", feed.updated)
 			for _, feedItem := range feed.items {
@@ -155,6 +160,10 @@ func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) 
 	updated := feed.PublishedParsed
 	if feed.UpdatedParsed != nil {
 		updated = feed.UpdatedParsed
+	}else {
+		// It may happen that there is no "updated" field. In this case, get the last post published date:
+		log.Println("Updated of [" + feed.Title + "] is nil, last article published: " + feed.Items[0].Published)
+		updated = feed.Items[0].PublishedParsed
 	}
 	toRet := FeedRssWrapper{id: rss.id, twitterHandle:rss.twitterHandle, updated:updated, items:feed.Items}
 	c<- &toRet
