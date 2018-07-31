@@ -35,12 +35,16 @@ func (handler FeedHandler) main() {
 
 	/** Save fetched rss results **/
 	handler.saveLastFetched(feeds)
-
-	/** If there are items to publish, do it. **/
 	if len(feedItemsToPublish) > 0 {
-		log.Println("Done iterating on items to publish. ", feedItemsToPublish[0].Title)
-		link := shortlinkService.generateShortlink(feedItemsToPublish[0])
-		handler.twitterHandler.publishLinkWithTitle("This is a test. Sorry for the inconvenience." + feedItemsToPublish[0].Title, link)
+		fmt.Println("There are item to publish.")
+	}else {
+		fmt.Println("There are no item to publish.")
+	}
+	/** If there are items to publish, do it. **/
+	for _, item := range feedItemsToPublish {
+		log.Println("Done iterating on items to publish. ", item.Title)
+		link := shortlinkService.generateShortlink(item)
+		handler.twitterHandler.publishLinkWithTitle("This is a test. Sorry for the inconvenience." + item.Title, link)
 	}
 	//handler.scheduleTweets(feedItemsToPublish)
 }
@@ -61,9 +65,8 @@ func (handler FeedHandler) getUpdatedFeedsItemWorker(jobs <-chan FeedUpdatedWork
 		if lastUpdated.Before(*feed.updated) {
 			log.Println("(",j.feed.id,  ") has updates! Last tweeted post was from ", lastUpdated, " now is ", feed.updated)
 			for _, feedItem := range feed.items {
-
 				if feedItem.PublishedParsed != nil && lastUpdated.Before(*feedItem.PublishedParsed) &&
-					strings.Contains(feedItem.Title, "Sponsored"){
+					!strings.Contains(feedItem.Title, "Sponsored"){
 					fmt.Println("This item is in queue for post:", feedItem.Link)
 					results <- *feedItem
 				}
