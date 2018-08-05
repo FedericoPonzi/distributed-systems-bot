@@ -44,7 +44,7 @@ func (handler FeedHandler) main() {
 	for _, item := range feedItemsToPublish {
 		log.Println("Done iterating on items to publish. ", item.Title)
 		link := shortlinkService.generateShortlink(item)
-		handler.twitterHandler.publishLinkWithTitle("This is a test. Sorry for the inconvenience." + item.Title, link)
+		handler.twitterHandler.publishLinkWithTitle(item.Title, link)
 	}
 	//handler.scheduleTweets(feedItemsToPublish)
 }
