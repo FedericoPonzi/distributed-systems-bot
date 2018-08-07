@@ -136,12 +136,13 @@ func (handler FeedHandler) fetchAllRss() (feedsFetched [] *FeedRssWrapper) {
 			handler.fetchSingleRss(feed, c)
 		}()
 	}
-
-	wg.Wait()
-	for i := 0; i < len(feedsRss); i++{
-		feedsFetched = append(feedsFetched, <-c)
+	go func() {
+		wg.Wait()
+		close(c)
+	}()
+	for feed := range c {
+		feedsFetched = append(feedsFetched, feed)
 	}
-	close(c)
 
 	log.Println("All work done.")
 	return feedsFetched
@@ -152,7 +153,7 @@ func (handler FeedHandler) fetchAllRss() (feedsFetched [] *FeedRssWrapper) {
  */
 func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) {
 	log.Println("I'm gonna fetch: ", rss.url)
-	url := rss.url //"https://blog.acolyer.org/feed/"
+	url := rss.url
 	fp := gofeed.NewParser()
 	feed, err := fp.ParseURL(url)
 	if err != nil {
@@ -169,6 +170,7 @@ func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) 
 		log.Println("Updated of [" + feed.Title + "] is nil, last article published: " + feed.Items[0].Published)
 		updated = feed.Items[0].PublishedParsed
 	}
+	log.Println("Feed fetched for: " + rss.url)
 	toRet := FeedRssWrapper{id: rss.id, twitterHandle:rss.twitterHandle, updated:updated, items:feed.Items}
 	c <- &toRet
 }
