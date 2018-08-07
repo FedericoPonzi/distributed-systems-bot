@@ -154,13 +154,14 @@ func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) 
 	log.Println("I'm gonna fetch: ", rss.url)
 	url := rss.url //"https://blog.acolyer.org/feed/"
 	fp := gofeed.NewParser()
-	feed, err := fp.ParseURL(url) // TODO handle err. Add retry
-	log.Println("Has parse errors? ", err)
-	//fatalIfErr(err)
-	if feed == nil{ // TODO. check err status.
+	feed, err := fp.ParseURL(url)
+	if err != nil {
+		log.Println("Error: While fetching feed:" + rss.url + ", got error:" + err.Error())
 		return
 	}
-	updated := feed.PublishedParsed
+
+	var updated *time.Time
+
 	if feed.UpdatedParsed != nil {
 		updated = feed.UpdatedParsed
 	}else {
@@ -169,8 +170,9 @@ func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) 
 		updated = feed.Items[0].PublishedParsed
 	}
 	toRet := FeedRssWrapper{id: rss.id, twitterHandle:rss.twitterHandle, updated:updated, items:feed.Items}
-	c<- &toRet
+	c <- &toRet
 }
+
 /**
 	Store the last time these feeds have been fetched + they're `updated` value.
  */
