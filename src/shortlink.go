@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/mmcdole/gofeed"
 	"strings"
-	"encoding/base64"
+	"github.com/marksalpeter/token"
 	"log"
 	"regexp"
 )
@@ -22,7 +22,7 @@ func NewShortLinkService(repo *MysqlRepository) (*ShortlinkService) {
 
 func (service *ShortlinkService) generateShortlink(item gofeed.Item) (string){
 	t := item.Title
-	id := randString(t, 6) + "-" + formatTitleForUrl(t, 43) //total: 50
+	id := randString(6) + "-" + formatTitleForUrl(t, 43) //total: 50
 	log.Println("Generated id: "+ id)
 	service.repo.addShortlink(id, item.Link)
 
@@ -42,6 +42,6 @@ func formatTitleForUrl(title string, maxlength int) (url  string){
 
 
 
-func randString(s string, maxChars int) string {
-	return base64.StdEncoding.EncodeToString([]byte(s))[:maxChars]
+func randString(maxChars int) string {
+	return token.New(maxChars).Encode()
 }
