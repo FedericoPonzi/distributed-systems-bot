@@ -1,4 +1,4 @@
-package main
+package twitter_handler
 
 import (
 	"github.com/dghubble/oauth1"
@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"github.com/FedericoPonzi/distributed-systems-bot/src/config"
 )
 
 type TwitterHandler struct {
@@ -24,7 +25,7 @@ type Tweet struct {
 	published int8
 }
 
-func NewTwitterHandler(config TwitterConfig) *TwitterHandler {
+func NewTwitterHandler(config config.TwitterConfig) *TwitterHandler {
 
 	oauthConf := oauth1.NewConfig(config.Consumerkey, config.ConumerSecret)
 	token := oauth1.NewToken(config.Token, config.TokenSecret)
@@ -123,7 +124,7 @@ func (twitterHandler * TwitterHandler) runStreaming(){
 	stream.Stop()
 
 }
-func (handler *TwitterHandler) publishLinkWithTitle(title string, link string) {
+func (handler *TwitterHandler) PublishLinkWithTitle(title string, link string) {
 	/**
 		Links uses 23 chars
 		So we have max 257 chars for tweet text. 1 chars for new line, so 256.

@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"github.com/go-yaml/yaml"
@@ -30,11 +30,11 @@ type Config struct {
 	Mysql    MysqlConfig    `yaml:"mysql"`
 }
 
-func (config *Config) getDbConnectionString() string {
+func (config *Config) GetDbConnectionString() string {
 	return config.Mysql.Username + ":" + config.Mysql.Password + "@tcp(" + config.Mysql.Host + ":" + config.Mysql.Port + ")/" + config.Mysql.DbName + "?parseTime=true"
 }
 
-func loadConfig(configFileName string) (config *Config, err error) {
+func LoadConfig(configFileName string) (config *Config, err error) {
 	f, err := os.Open(configFileName)
 	config = new(Config)
 	if err != nil {

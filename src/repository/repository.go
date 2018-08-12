@@ -1,18 +1,19 @@
-package main
+package repository
 
 import (
 	"database/sql"
 	"log"
 	"time"
+	"github.com/FedericoPonzi/distributed-systems-bot/src/config"
 )
 
 type MysqlRepository struct {
 	db *sql.DB
 }
 
-func NewMysqlRepository(config *Config) (mysqlRepository *MysqlRepository) {
+func NewMysqlRepository(config *config.Config) (mysqlRepository *MysqlRepository) {
 
-	return &MysqlRepository{connectDb(config.getDbConnectionString())}
+	return &MysqlRepository{connectDb(config.GetDbConnectionString())}
 }
 
 type FeedRss struct {
@@ -21,6 +22,16 @@ type FeedRss struct {
 	url           string
 	name          string
 	category      int
+}
+func (feed FeedRss) Url() string {
+	return feed.url
+}
+func (feed FeedRss) Id() int {
+	return feed.id
+}
+
+func (feed FeedRss) TwitterHandle() string {
+	return feed.twitterHandle
 }
 
 type Shortlink struct {
@@ -42,13 +53,16 @@ func connectDb(connection string) *sql.DB {
 	return db
 }
 
-func (repo *MysqlRepository) close() {
+func (repo *MysqlRepository) Close() {
 	repo.db.Close()
 }
 
-func (repo *MysqlRepository) getAllFeedRss() (toRet []*FeedRss) {
+func (repo *MysqlRepository) GetAllFeedRss() (toRet []*FeedRss) {
 	rows, err := repo.db.Query("select id, name, twitterHandle, url from feed_rss")
-	fatalIfErr(err)
+	if err != nil {
+		log.Println("Error running getallfeedrss query: " + err.Error())
+	}
+
 	defer rows.Close()
 
 	for rows.Next() {
@@ -66,7 +80,7 @@ func (repo *MysqlRepository) getAllFeedRss() (toRet []*FeedRss) {
 	return toRet
 }
 
-func (repo *MysqlRepository) findFeedRssIdByUrl(url string) (id int) {
+func (repo *MysqlRepository) FindFeedRssIdByUrl(url string) (id int) {
 	log.Println("Looking for id, from url: ", url)
 	err := repo.db.QueryRow("select id from feed_rss where url = ?", url).Scan(&id)
 	if err != nil {
@@ -74,7 +88,7 @@ func (repo *MysqlRepository) findFeedRssIdByUrl(url string) (id int) {
 	}
 	return id
 }
-func (repo *MysqlRepository) addFeedRssVisited(feed_id int, updated *time.Time) {
+func (repo *MysqlRepository) AddFeedRssVisited(feed_id int, updated *time.Time) {
 	stmt, err := repo.db.Prepare("INSERT INTO feed_rss_visited(feed_id,updated) VALUES(?,?)")
 	if err != nil {
 		log.Fatal(err)
@@ -89,7 +103,7 @@ func (repo *MysqlRepository) addFeedRssVisited(feed_id int, updated *time.Time) 
 	}
 }
 
-func (repo *MysqlRepository) getLastFeedRssUpdatedByFeedId(id int) (t time.Time) {
+func (repo *MysqlRepository) GetLastFeedRssUpdatedByFeedId(id int) (t time.Time) {
 	log.Println("Looking for last update for visited: ", id)
 	err := repo.db.QueryRow("select updated from feed_rss_visited where feed_id = ? order by id desc limit 1;", id).Scan(&t)
 	if err != nil {
@@ -99,7 +113,7 @@ func (repo *MysqlRepository) getLastFeedRssUpdatedByFeedId(id int) (t time.Time)
 
 	return t
 }
-func (repo MysqlRepository) addShortlink(id string, url string) {
+func (repo MysqlRepository) AddShortlink(id string, url string) {
 	stmt, err := repo.db.Prepare("INSERT INTO shortlink(uuid, url) VALUES(?,?)")
 	if err != nil {
 		log.Fatal(err)

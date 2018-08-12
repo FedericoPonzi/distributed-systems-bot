@@ -1,4 +1,4 @@
-package main
+package feed_rss
 
 import (
 	"github.com/mmcdole/gofeed"
@@ -7,6 +7,10 @@ import (
 	"log"
 	"time"
 	"strings"
+
+	"github.com/FedericoPonzi/distributed-systems-bot/src/twitter_handler"
+	"github.com/FedericoPonzi/distributed-systems-bot/src/shortlink"
+	"github.com/FedericoPonzi/distributed-systems-bot/src/repository"
 )
 
 type FeedRssWrapper struct {
@@ -17,19 +21,19 @@ type FeedRssWrapper struct {
 }
 
 type FeedHandler struct {
-	repo *MysqlRepository
-	twitterHandler *TwitterHandler
+	repo *repository.MysqlRepository
+	twitterHandler *twitter_handler.TwitterHandler
 }
 
-func NewFeedHandler (repo *MysqlRepository, twitterHandler *TwitterHandler) *FeedHandler {
+func NewFeedHandler (repo *repository.MysqlRepository, twitterHandler *twitter_handler.TwitterHandler) *FeedHandler {
 	return &FeedHandler{repo, twitterHandler}
 }
-func (handler FeedHandler) main() {
+func (handler FeedHandler) Main() {
 	/** Download all feeds. **/
 	feeds := handler.fetchAllRss()
 
 	/** Init short link service **/
-	shortlinkService := NewShortLinkService(handler.repo)
+	shortlinkService := shortlink.NewShortLinkService(handler.repo)
 	/** Get the feedsItem to publish from the feed (compare updated value of last time, with feeds/items published time) **/
 	feedItemsToPublish := handler.getUpdatedItems(feeds)
 
@@ -43,8 +47,8 @@ func (handler FeedHandler) main() {
 	/** If there are items to publish, do it. **/
 	for _, item := range feedItemsToPublish {
 		log.Println("Done iterating on items to publish. ", item.Title)
-		link := shortlinkService.generateShortlink(item)
-		handler.twitterHandler.publishLinkWithTitle(item.Title, link)
+		link := shortlinkService.GenerateShortlinkFromFeedItem(item)
+		handler.twitterHandler.PublishLinkWithTitle(item.Title, link)
 	}
 	//handler.scheduleTweets(feedItemsToPublish)
 }
@@ -98,7 +102,7 @@ func (handler FeedHandler) getUpdatedItems(feedsFetched[] *FeedRssWrapper) (feed
 	}
 
 	for _, feed := range feedsFetched {
-		lastUpdated := handler.repo.getLastFeedRssUpdatedByFeedId(feed.id)
+		lastUpdated := handler.repo.GetLastFeedRssUpdatedByFeedId(feed.id)
 		jobs <- FeedUpdatedWorkUnit{lastUpdated: lastUpdated, feed:feed}
 	}
 	log.Println("done sending jobs.")
@@ -123,7 +127,7 @@ func (handler FeedHandler) getUpdatedItems(feedsFetched[] *FeedRssWrapper) (feed
    Gets the url from database, run a gorotuine for every url - maybe a fixed pool size would be better?
  */
 func (handler FeedHandler) fetchAllRss() (feedsFetched [] *FeedRssWrapper) {
-	feedsRss := handler.repo.getAllFeedRss()
+	feedsRss := handler.repo.GetAllFeedRss()
 
 	c := make(chan *FeedRssWrapper, len(feedsRss))
 	wg := new(sync.WaitGroup)
@@ -151,13 +155,13 @@ func (handler FeedHandler) fetchAllRss() (feedsFetched [] *FeedRssWrapper) {
 /**
 	A worker to fetch a single rss feed.
  */
-func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) {
-	log.Println("I'm gonna fetch: ", rss.url)
-	url := rss.url
+func (handler FeedHandler) fetchSingleRss(rss *repository.FeedRss, c chan *FeedRssWrapper) {
+	log.Println("I'm gonna fetch: ", rss.Url())
+	url := rss.Url()
 	fp := gofeed.NewParser()
 	feed, err := fp.ParseURL(url)
 	if err != nil {
-		log.Println("Error: While fetching feed:" + rss.url + ", got error:" + err.Error())
+		log.Println("Error: While fetching feed:" + rss.Url() + ", got error:" + err.Error())
 		return
 	}
 
@@ -170,8 +174,8 @@ func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) 
 		log.Println("Updated of [" + feed.Title + "] is nil, last article published: " + feed.Items[0].Published)
 		updated = feed.Items[0].PublishedParsed
 	}
-	log.Println("Feed fetched for: " + rss.url)
-	toRet := FeedRssWrapper{id: rss.id, twitterHandle:rss.twitterHandle, updated:updated, items:feed.Items}
+	log.Println("Feed fetched for: " + rss.Url())
+	toRet := FeedRssWrapper{id: rss.Id(), twitterHandle:rss.TwitterHandle(), updated:updated, items:feed.Items}
 	c <- &toRet
 }
 
@@ -180,12 +184,12 @@ func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) 
  */
 func (handler FeedHandler) saveLastFetched(feeds []*FeedRssWrapper) {
 	for _, f := range feeds {
-		handler.repo.addFeedRssVisited(f.id, f.updated)
+		handler.repo.AddFeedRssVisited(f.id, f.updated)
 	}
 
 }
 func (handler FeedHandler) scheduleTweets(items []gofeed.Item) {
 	for _, item := range items {
-		handler.twitterHandler.publishLinkWithTitle(item.Title, item.Link)
+		handler.twitterHandler.PublishLinkWithTitle(item.Title, item.Link)
 	}
 }

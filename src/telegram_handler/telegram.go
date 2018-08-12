@@ -1,4 +1,4 @@
-package main
+package telegram_handler
 
 import (
 	"log"

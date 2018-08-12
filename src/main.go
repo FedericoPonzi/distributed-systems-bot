@@ -7,15 +7,22 @@ import (
 import (
 	_ "github.com/go-sql-driver/mysql"
 	"flag"
+	"github.com/FedericoPonzi/distributed-systems-bot/src/config"
+	"github.com/FedericoPonzi/distributed-systems-bot/src/repository"
+	"github.com/FedericoPonzi/distributed-systems-bot/src/twitter_handler"
+	"github.com/FedericoPonzi/distributed-systems-bot/src/feed_rss"
+	"github.com/FedericoPonzi/distributed-systems-bot/src/shortlink"
 )
 
 
 
 var configPath string
 var fetchRssRun bool
+var shortLink string
 func parseArgs() {
 	flag.StringVar(&configPath, "config", "config.yaml", "Complete path to the config yaml file.")
 	flag.BoolVar(&fetchRssRun, "fetch-rss", false, "Fetch feed rss")
+	flag.StringVar(&shortLink, "shortlink", "", "Generate a shortlink.")
 	flag.Parse()
 }
 
@@ -24,25 +31,30 @@ func main() {
 	parseArgs()
 	fmt.Println(configPath)
 
-	config, err := loadConfig(configPath)
+	config, err := config.LoadConfig(configPath)
 
 	if err != nil {
 		log.Fatal("Error loading config: ", err)
 	}
 
-	repo := NewMysqlRepository(config)
+	repo := repository.NewMysqlRepository(config)
 
 	defer func() {
-		repo.close()
+		repo.Close()
 		log.Println("End of the execution. Thanks for playing :)")
 
 	}()
 
-	twitterHandler := NewTwitterHandler(config.Twitter)
+	twitterHandler := twitter_handler.NewTwitterHandler(config.Twitter)
 
 	if fetchRssRun {
-		feedHandler := NewFeedHandler(repo, twitterHandler)
-		feedHandler.main()
+		feedHandler := feed_rss.NewFeedHandler(repo, twitterHandler)
+		feedHandler.Main()
+	} else if len(shortLink) > 0{
+		fmt.Println("I'm going to generate a shortlink for: " + shortLink + " just a sec...")
+		shortLinkService := shortlink.NewShortLinkService(repo)
+		generated := shortLinkService.GenerateShortlinkFromLink(shortLink)
+		fmt.Println("Generated shortlink: " + generated)
 	}
 	//fmt.Println("Going to publish:", feedHandler.getUpdatedItems(feedHandler.fetchAllRss()))
 	//
