@@ -1,4 +1,4 @@
-package telegram_handler
+package main
 
 import (
 	"log"
@@ -8,12 +8,15 @@ import (
 type TelegramHandler struct {
 	botApi *tgbotapi.BotAPI
 	userId int
-	twitterHandler TwitterHandler
+	twitterHandler *TwitterHandler
 }
 
 
 func (handler *TelegramHandler) postUpdate(text string) string {
-
+	if !handler.containsLink(text) {
+		return "Sorry at this time I can only share links for you!"
+	}
+	err := handler.twitterHandler.PublishLink(text)
 	/*tweet, resp, err := handler.twitterHandler.bot.Statuses.Update(text, nil)
 	if err != nil {
 		errStr := fmt.Sprint("Error twitting message:", tweet, resp)
@@ -21,12 +24,16 @@ func (handler *TelegramHandler) postUpdate(text string) string {
 		return errStr
 	}
 	*/
+
+	if err != nil {
+		return err.Error()
+	}
 	return "Update sent! Good Job!"
 
 }
 
 
-func NewTelegramHandler(config TelegramConfig, twitterHandler TwitterHandler) (toRet TelegramHandler) {
+func NewTelegramHandler(config TelegramConfig, twitterHandler *TwitterHandler) (toRet TelegramHandler) {
 	bot, err := tgbotapi.NewBotAPI(config.ApiKey);
 	if err != nil {
 		log.Panic(err)
@@ -49,17 +56,27 @@ func (handler *TelegramHandler) run(){
 		log.Fatal("TelegramHandler: impossible to get updates.")
 	}
 	for update := range updates {
-		if update.Message == nil || update.Message.From.ID == handler.userId {
+		if update.Message == nil || update.Message.From.ID != handler.userId {
 			continue
 		}
 
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-		msg.ReplyToMessageID = update.Message.MessageID
-		msg.Text = handler.postUpdate(update.Message.Text)
+		resp := tgbotapi.NewMessage(update.Message.Chat.ID, "Ok")
+		resp.ReplyToMessageID = update.Message.MessageID
+		respText := ""
+		if update.Message.Text == "/start" {
+			respText = "Hello man! What's up? I will help you send updates to Twitter. I can only handle links updates tho.\nLet's get started, send me your first link!"
+		} else {
+			respText = handler.postUpdate(update.Message.Text)
+		}
 
-		handler.botApi.Send(msg)
+		resp.Text = respText
+
+		handler.botApi.Send(resp)
 	}
+}
+func (handler *TelegramHandler) containsLink(s string) bool {
+	return true
 }
 

@@ -3,15 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
-)
-import (
-	_ "github.com/go-sql-driver/mysql"
+_ "github.com/go-sql-driver/mysql"
 	"flag"
-	"github.com/FedericoPonzi/distributed-systems-bot/src/config"
-	"github.com/FedericoPonzi/distributed-systems-bot/src/repository"
-	"github.com/FedericoPonzi/distributed-systems-bot/src/twitter_handler"
-	"github.com/FedericoPonzi/distributed-systems-bot/src/feed_rss"
-	"github.com/FedericoPonzi/distributed-systems-bot/src/shortlink"
+	"strconv"
 )
 
 
@@ -19,10 +13,15 @@ import (
 var configPath string
 var fetchRssRun bool
 var shortLink string
+var telegramBot bool
+var dryRun bool
+
 func parseArgs() {
+	flag.BoolVar(&dryRun, "dryrun", false, "Perform a dry run: runs every function, but dosen't publish the tweet.")
 	flag.StringVar(&configPath, "config", "config.yaml", "Complete path to the config yaml file.")
 	flag.BoolVar(&fetchRssRun, "fetch-rss", false, "Fetch feed rss")
 	flag.StringVar(&shortLink, "shortlink", "", "Generate a shortlink.")
+	flag.BoolVar(&telegramBot, "telegram-bot", false, "Run the telegram bot")
 	flag.Parse()
 }
 
@@ -31,31 +30,45 @@ func main() {
 	parseArgs()
 	fmt.Println(configPath)
 
-	config, err := config.LoadConfig(configPath)
-
+	config, err := LoadConfig(configPath)
+	config.Twitter.DryRun = dryRun
 	if err != nil {
 		log.Fatal("Error loading config: ", err)
 	}
 
-	repo := repository.NewMysqlRepository(config)
+	repo := NewMysqlRepository(config)
 
 	defer func() {
 		repo.Close()
 		log.Println("End of the execution. Thanks for playing :)")
 
 	}()
-
-	twitterHandler := twitter_handler.NewTwitterHandler(config.Twitter)
-
+	twitterHandler := NewTwitterHandler(repo, config.Twitter)
+	fmt.Println("Fetch-rss:", strconv.FormatBool(fetchRssRun), " , telegram: ", strconv.FormatBool(telegramBot))
 	if fetchRssRun {
-		feedHandler := feed_rss.NewFeedHandler(repo, twitterHandler)
+		fmt.Println("Running fetch rss command.")
+		feedHandler := NewFeedHandler(repo, twitterHandler)
 		feedHandler.Main()
-	} else if len(shortLink) > 0{
-		fmt.Println("I'm going to generate a shortlink for: " + shortLink + " just a sec...")
-		shortLinkService := shortlink.NewShortLinkService(repo)
-		generated := shortLinkService.GenerateShortlinkFromLink(shortLink)
-		fmt.Println("Generated shortlink: " + generated)
+		fmt.Println("Done fetching feeds.")
+		return
 	}
+
+	if len(shortLink) > 0{
+		fmt.Println("I'm going to generate a shortlink for: " + shortLink + " just a sec...")
+		shortLinkService := NewShortLinkService(repo)
+		shortlink, title := shortLinkService.GenerateShortlink(shortLink)
+		fmt.Println("Generated shortlink: " + shortlink + ", parsed title:" + title)
+		return
+	}
+
+	if telegramBot {
+		fmt.Println("Running telegram bot.")
+		handler := NewTelegramHandler(config.Telegram, twitterHandler)
+		handler.run()
+		return
+	}
+
+
 	//fmt.Println("Going to publish:", feedHandler.getUpdatedItems(feedHandler.fetchAllRss()))
 	//
 	//go twitterHandler.runStreaming();

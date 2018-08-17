@@ -1,4 +1,4 @@
-package config
+package main
 
 import (
 	"github.com/go-yaml/yaml"
@@ -12,6 +12,7 @@ type TwitterConfig struct {
 	ConumerSecret string `yaml:"consumerSecret"`
 	Token         string `yaml:"token"`
 	TokenSecret   string `yaml:"tokenSecret"`
+	DryRun		  bool
 }
 type TelegramConfig struct {
 	ApiKey string `yaml:"apiKey"`

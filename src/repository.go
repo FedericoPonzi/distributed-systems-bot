@@ -1,17 +1,16 @@
-package repository
+package main
 
 import (
 	"database/sql"
 	"log"
 	"time"
-	"github.com/FedericoPonzi/distributed-systems-bot/src/config"
 )
 
 type MysqlRepository struct {
 	db *sql.DB
 }
 
-func NewMysqlRepository(config *config.Config) (mysqlRepository *MysqlRepository) {
+func NewMysqlRepository(config *Config) (mysqlRepository *MysqlRepository) {
 
 	return &MysqlRepository{connectDb(config.GetDbConnectionString())}
 }
@@ -113,17 +112,18 @@ func (repo *MysqlRepository) GetLastFeedRssUpdatedByFeedId(id int) (t time.Time)
 
 	return t
 }
-func (repo MysqlRepository) AddShortlink(id string, url string) {
+func (repo MysqlRepository) AddShortlink(id string, url string) error {
 	stmt, err := repo.db.Prepare("INSERT INTO shortlink(uuid, url) VALUES(?,?)")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	res, err := stmt.Exec(id, url)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	_, err = res.LastInsertId()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	return nil
 }

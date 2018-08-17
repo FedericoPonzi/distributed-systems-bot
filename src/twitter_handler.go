@@ -1,4 +1,4 @@
-package twitter_handler
+package main
 
 import (
 	"github.com/dghubble/oauth1"
@@ -9,13 +9,14 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"github.com/FedericoPonzi/distributed-systems-bot/src/config"
 )
 
 type TwitterHandler struct {
+	repo *MysqlRepository
 	bot *twitter.Client
 	MioUserId int
 	DistribSystemsId int64
+	dryRun bool
 }
 
 type Tweet struct {
@@ -25,7 +26,7 @@ type Tweet struct {
 	published int8
 }
 
-func NewTwitterHandler(config config.TwitterConfig) *TwitterHandler {
+func NewTwitterHandler(repo * MysqlRepository, config TwitterConfig) *TwitterHandler {
 
 	oauthConf := oauth1.NewConfig(config.Consumerkey, config.ConumerSecret)
 	token := oauth1.NewToken(config.Token, config.TokenSecret)
@@ -36,7 +37,8 @@ func NewTwitterHandler(config config.TwitterConfig) *TwitterHandler {
 	client := twitter.NewClient(httpClient)
 
 	log.Println("Twitter bot initialized!")
-	return &TwitterHandler{client, 49260476, 825409653454598145}
+	return &TwitterHandler{bot: client, MioUserId: 49260476, DistribSystemsId: 825409653454598145, repo: repo,
+		dryRun:config.DryRun }
 }
 
 func (twitterHandler *TwitterHandler) retweetAndLike(t *twitter.Tweet) {
@@ -50,11 +52,7 @@ func (twitterHandler *TwitterHandler) retweetAndLike(t *twitter.Tweet) {
 	favourite := twitter.FavoriteCreateParams{t.ID}
 	twitterHandler.bot.Favorites.Create(&favourite)
 }
-func fatalIfErr(err error) {
-	if(err != nil){
-		log.Fatal("Error :", err)
-	}
-}
+
 func (twitterHandler *TwitterHandler) getFriendList() (toRet []twitter.User) {
 	var cursor int64 = -1
 	var friendParams twitter.FriendListParams
@@ -122,9 +120,17 @@ func (twitterHandler * TwitterHandler) runStreaming(){
 
 	fmt.Println("Stopping Stream...")
 	stream.Stop()
-
 }
-func (handler *TwitterHandler) PublishLinkWithTitle(title string, link string) {
+
+func (handler *TwitterHandler) PublishLink(link string) (err error) {
+	shortlinkService := NewShortLinkService(handler.repo)
+	shortlink, title, err := shortlinkService.GenerateShortlink(link)
+	return handler.PublishLinkWithTitle(title, shortlink)
+}
+
+func (handler *TwitterHandler) PublishLinkWithTitle(title string, link string) (err error) {
+	shortlinkService := NewShortLinkService(handler.repo)
+	shortlink := shortlinkService.GenerateShortlinkWithTitle(link, title)
 	/**
 		Links uses 23 chars
 		So we have max 257 chars for tweet text. 1 chars for new line, so 256.
@@ -133,9 +139,16 @@ func (handler *TwitterHandler) PublishLinkWithTitle(title string, link string) {
 	if len(title) > 256 {
 		title = title[:256-4] + "..." //4 and not 3, because arrays start from 0.
 	}
-	tweet := title + "\n" + link
-	//TODO: save tweet in db!
-	res, resp, err := handler.bot.Statuses.Update(tweet, nil)
-	fmt.Println(res, resp, err)
+	tweet := title + "\n" + shortlink
+	return handler.PublishTweet(tweet)
+}
 
+func (handler *TwitterHandler) PublishTweet(tweet string) (err error){
+	if !handler.dryRun {
+		res, resp, err := handler.bot.Statuses.Update(tweet, nil)
+		fmt.Println(res, resp, err)
+		return err
+	}
+	//TODO: save tweet in db!
+	return nil
 }

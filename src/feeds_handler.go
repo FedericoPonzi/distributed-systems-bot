@@ -1,4 +1,4 @@
-package feed_rss
+package main
 
 import (
 	"github.com/mmcdole/gofeed"
@@ -8,9 +8,6 @@ import (
 	"time"
 	"strings"
 
-	"github.com/FedericoPonzi/distributed-systems-bot/src/twitter_handler"
-	"github.com/FedericoPonzi/distributed-systems-bot/src/shortlink"
-	"github.com/FedericoPonzi/distributed-systems-bot/src/repository"
 )
 
 type FeedRssWrapper struct {
@@ -21,11 +18,11 @@ type FeedRssWrapper struct {
 }
 
 type FeedHandler struct {
-	repo *repository.MysqlRepository
-	twitterHandler *twitter_handler.TwitterHandler
+	repo *MysqlRepository
+	twitterHandler *TwitterHandler
 }
 
-func NewFeedHandler (repo *repository.MysqlRepository, twitterHandler *twitter_handler.TwitterHandler) *FeedHandler {
+func NewFeedHandler (repo *MysqlRepository, twitterHandler *TwitterHandler) *FeedHandler {
 	return &FeedHandler{repo, twitterHandler}
 }
 func (handler FeedHandler) Main() {
@@ -33,7 +30,6 @@ func (handler FeedHandler) Main() {
 	feeds := handler.fetchAllRss()
 
 	/** Init short link service **/
-	shortlinkService := shortlink.NewShortLinkService(handler.repo)
 	/** Get the feedsItem to publish from the feed (compare updated value of last time, with feeds/items published time) **/
 	feedItemsToPublish := handler.getUpdatedItems(feeds)
 
@@ -47,8 +43,7 @@ func (handler FeedHandler) Main() {
 	/** If there are items to publish, do it. **/
 	for _, item := range feedItemsToPublish {
 		log.Println("Done iterating on items to publish. ", item.Title)
-		link := shortlinkService.GenerateShortlinkFromFeedItem(item)
-		handler.twitterHandler.PublishLinkWithTitle(item.Title, link)
+		handler.twitterHandler.PublishLinkWithTitle(item.Title, item.Link)
 	}
 	//handler.scheduleTweets(feedItemsToPublish)
 }
@@ -155,7 +150,7 @@ func (handler FeedHandler) fetchAllRss() (feedsFetched [] *FeedRssWrapper) {
 /**
 	A worker to fetch a single rss feed.
  */
-func (handler FeedHandler) fetchSingleRss(rss *repository.FeedRss, c chan *FeedRssWrapper) {
+func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) {
 	log.Println("I'm gonna fetch: ", rss.Url())
 	url := rss.Url()
 	fp := gofeed.NewParser()
