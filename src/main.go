@@ -56,7 +56,7 @@ func main() {
 	if len(shortLink) > 0{
 		fmt.Println("I'm going to generate a shortlink for: " + shortLink + " just a sec...")
 		shortLinkService := NewShortLinkService(repo)
-		shortlink, title := shortLinkService.GenerateShortlink(shortLink)
+		shortlink, title, _ := shortLinkService.GenerateShortlink(shortLink)
 		fmt.Println("Generated shortlink: " + shortlink + ", parsed title:" + title)
 		return
 	}
