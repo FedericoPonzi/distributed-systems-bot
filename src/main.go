@@ -17,7 +17,7 @@ var telegramBot bool
 var dryRun bool
 
 func parseArgs() {
-	flag.BoolVar(&dryRun, "dryrun", false, "Perform a dry run: runs every function, but dosen't publish the tweet.")
+	flag.BoolVar(&dryRun, "dry-run", false, "Perform a dry run: runs every function, but dosen't publish the tweet.")
 	flag.StringVar(&configPath, "config", "config.yaml", "Complete path to the config yaml file.")
 	flag.BoolVar(&fetchRssRun, "fetch-rss", false, "Fetch feed rss")
 	flag.StringVar(&shortLink, "shortlink", "", "Generate a shortlink.")
@@ -32,6 +32,7 @@ func main() {
 
 	config, err := LoadConfig(configPath)
 	config.Twitter.DryRun = dryRun
+
 	if err != nil {
 		log.Fatal("Error loading config: ", err)
 	}
@@ -41,8 +42,8 @@ func main() {
 	defer func() {
 		repo.Close()
 		log.Println("End of the execution. Thanks for playing :)")
-
 	}()
+
 	twitterHandler := NewTwitterHandler(repo, config.Twitter)
 	fmt.Println("Fetch-rss:", strconv.FormatBool(fetchRssRun), " , telegram: ", strconv.FormatBool(telegramBot))
 	if fetchRssRun {

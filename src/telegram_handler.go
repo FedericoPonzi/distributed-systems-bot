@@ -56,7 +56,7 @@ func (handler *TelegramHandler) run(){
 		log.Fatal("TelegramHandler: impossible to get updates.")
 	}
 	for update := range updates {
-		if update.Message == nil || update.Message.From.ID != handler.userId {
+		if update.Message == nil ||  handler.defaultMessage(update) {
 			continue
 		}
 
@@ -70,12 +70,25 @@ func (handler *TelegramHandler) run(){
 		} else {
 			respText = handler.postUpdate(update.Message.Text)
 		}
-
 		resp.Text = respText
-
 		handler.botApi.Send(resp)
 	}
 }
+
+func (handler *TelegramHandler) defaultMessage(update tgbotapi.Update) (bool) {
+	if update.Message.From.ID != handler.userId {
+		resp := tgbotapi.NewMessage(update.Message.Chat.ID, "Hello there! " +
+			"\nSorry, but at the moment I can't do anything useful for you." +
+			"\nI'll go open source in the future, but I'm just not ready yet :) " +
+			"\nIn the meanwhile, if you're interested in Distributed Systems, " +
+			"feel free to follow me on https://twitter.com/DistribSystems")
+		resp.ReplyToMessageID = update.Message.MessageID
+		handler.botApi.Send(resp)
+		return true
+	}
+	return false
+}
+
 func (handler *TelegramHandler) containsLink(s string) bool {
 	return true
 }

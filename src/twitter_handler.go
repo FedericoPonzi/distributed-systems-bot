@@ -122,15 +122,30 @@ func (twitterHandler * TwitterHandler) runStreaming(){
 	stream.Stop()
 }
 
-func (handler *TwitterHandler) PublishLink(link string) (err error) {
+// Publish a shortlink
+func (handler *TwitterHandler) PublishShortLink(link string) (err error) {
 	shortlinkService := NewShortLinkService(handler.repo)
 	shortlink, title, err := shortlinkService.GenerateShortlink(link)
+	if err != nil {
+		log.Println("Error generating the shortlink!! " + err.Error())
+		return err
+	}
 	return handler.PublishLinkWithTitle(title, shortlink)
 }
 
-func (handler *TwitterHandler) PublishLinkWithTitle(title string, link string) (err error) {
+// Publish a Link - that will be shortlinked
+func (handler *TwitterHandler) PublishLink(link string) (err error) {
 	shortlinkService := NewShortLinkService(handler.repo)
-	shortlink := shortlinkService.GenerateShortlinkWithTitle(link, title)
+	shortlink, title, err := shortlinkService.GenerateShortlink(link)
+	if err != nil {
+		log.Println("Error generating the shortlink!! " + err.Error())
+		return err
+	}
+	return handler.PublishLinkWithTitle(title, shortlink)
+}
+
+// Publish Title and a Link  that will be shortlinked
+func (handler *TwitterHandler) PublishLinkWithTitle(title string, link string) (err error) {
 	/**
 		Links uses 23 chars
 		So we have max 257 chars for tweet text. 1 chars for new line, so 256.
@@ -139,10 +154,19 @@ func (handler *TwitterHandler) PublishLinkWithTitle(title string, link string) (
 	if len(title) > 256 {
 		title = title[:256-4] + "..." //4 and not 3, because arrays start from 0.
 	}
-	tweet := title + "\n" + shortlink
+	tweet := title + "\n" + link
 	return handler.PublishTweet(tweet)
 }
 
+// Publish a Title with a shortlink
+func (handler *TwitterHandler) PublishShortLinkWithTitle(title string, link string) (err error) {
+	shortlinkService := NewShortLinkService(handler.repo)
+	shortlink := shortlinkService.GenerateShortlinkWithTitle(link, title)
+	return handler.PublishLinkWithTitle(title, shortlink)
+
+}
+
+// Publish a text tweet.
 func (handler *TwitterHandler) PublishTweet(tweet string) (err error){
 	if !handler.dryRun {
 		res, resp, err := handler.bot.Statuses.Update(tweet, nil)

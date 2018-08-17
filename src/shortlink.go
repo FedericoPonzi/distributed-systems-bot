@@ -21,33 +21,39 @@ func NewShortLinkService(repo *MysqlRepository) (*ShortlinkService) {
 
 	return &ShortlinkService{repo: repo, url: "https://ds.fponzi.me"}
 }
-
-func (service *ShortlinkService) GenerateShortlink(link string) (shortlink string, title string, err error) {
+func (service *ShortlinkService) FetchTitle(link string) (title string, err error) {
 	res, err := http.Get(link)
 	if err != nil {
 		log.Println("Impossible to fetch the webpage.")
-		return "", "", err
+		return "",  err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		log.Println("Wrong status code")
-		return "","", errors.New(fmt.Sprintf("status code error: %d %s", res.StatusCode, res.Status))
+		return "", errors.New(fmt.Sprintf("status code error: %d %s", res.StatusCode, res.Status))
 	}
 
 	r := regexp.MustCompile(`(?i)<\s*title\s*>\s*(.+)\s*<\s*/title\s*>`)
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Println("Error on reading response body.")
-		return "", "", err
+		return "", err
 	}
 	re := r.FindSubmatch(body)
 	if re == nil {
 		log.Fatal("Impossibile to find title in the web page. Please supply a custom one.")
-		return "","", err
+		return "", err
 	}
-	id := service.generateId(string(re[1]))
+	return string(re[1]), err
+}
+func (service *ShortlinkService) GenerateShortlink(link string) (shortlink string, title string, err error) {
+	title, err = service.FetchTitle(link)
+	if err != nil {
+		return "" ,"", err
+	}
+	id := service.generateId(title)
 	service.repo.AddShortlink(id, link)
-	return service.url + "/" + id, string(re[1]), nil
+	return service.url + "/" + id, title, nil
 }
 
 func (service *ShortlinkService) generateId(title string) (string) {

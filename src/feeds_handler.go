@@ -184,6 +184,7 @@ func (handler FeedHandler) saveLastFetched(feeds []*FeedRssWrapper) {
 
 }
 func (handler FeedHandler) scheduleTweets(items []gofeed.Item) {
+
 	for _, item := range items {
 		handler.twitterHandler.PublishLinkWithTitle(item.Title, item.Link)
 	}
