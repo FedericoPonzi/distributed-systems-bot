@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"regexp"
 )
 
 type TelegramHandler struct {
@@ -89,7 +90,8 @@ func (handler *TelegramHandler) defaultMessage(update tgbotapi.Update) (bool) {
 	return false
 }
 
-func (handler *TelegramHandler) containsLink(s string) bool {
-	return true
+func (handler *TelegramHandler) isLink(s string) bool {
+	re := regexp.MustCompile(`(?i)<\s*title\s*>\s*(.+)\s*<\s*/title\s*>`)
+	return re.MatchString(s)
 }
 

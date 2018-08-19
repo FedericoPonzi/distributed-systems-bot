@@ -14,8 +14,6 @@ import (
 type TwitterHandler struct {
 	repo *MysqlRepository
 	bot *twitter.Client
-	MioUserId int
-	DistribSystemsId int64
 	dryRun bool
 }
 
@@ -37,7 +35,7 @@ func NewTwitterHandler(repo * MysqlRepository, config TwitterConfig) *TwitterHan
 	client := twitter.NewClient(httpClient)
 
 	log.Println("Twitter bot initialized!")
-	return &TwitterHandler{bot: client, MioUserId: 49260476, DistribSystemsId: 825409653454598145, repo: repo,
+	return &TwitterHandler{bot: client, repo: repo,
 		dryRun:config.DryRun }
 }
 
@@ -54,7 +52,7 @@ func (twitterHandler *TwitterHandler) retweetAndLike(t *twitter.Tweet) {
 }
 
 func (twitterHandler *TwitterHandler) getFriendList() (toRet []twitter.User) {
-	var cursor int64 = -1
+	/*var cursor int64 = -1
 	var friendParams twitter.FriendListParams
 	for cursor != 0 {
 		friendParams = twitter.FriendListParams{UserID: twitterHandler.DistribSystemsId, Cursor: cursor}
@@ -67,7 +65,7 @@ func (twitterHandler *TwitterHandler) getFriendList() (toRet []twitter.User) {
 		}
 		cursor = list.NextCursor
 	}
-
+	*/
 	return toRet
 }
 
@@ -122,18 +120,18 @@ func (twitterHandler * TwitterHandler) runStreaming(){
 	stream.Stop()
 }
 
-// Publish a shortlink
-func (handler *TwitterHandler) PublishShortLink(link string) (err error) {
+// Publish a shortlink.
+func (handler *TwitterHandler) PublishShortLink(shortlink string) (err error) {
 	shortlinkService := NewShortLinkService(handler.repo)
-	shortlink, title, err := shortlinkService.GenerateShortlink(link)
+	title, err := shortlinkService.FetchTitle(shortlink)
 	if err != nil {
-		log.Println("Error generating the shortlink!! " + err.Error())
+		log.Println("Error fetching the title: " + err.Error())
 		return err
 	}
 	return handler.PublishLinkWithTitle(title, shortlink)
 }
 
-// Publish a Link - that will be shortlinked
+// Publish a Link - that will be shortlinked TODO
 func (handler *TwitterHandler) PublishLink(link string) (err error) {
 	shortlinkService := NewShortLinkService(handler.repo)
 	shortlink, title, err := shortlinkService.GenerateShortlink(link)
@@ -141,29 +139,28 @@ func (handler *TwitterHandler) PublishLink(link string) (err error) {
 		log.Println("Error generating the shortlink!! " + err.Error())
 		return err
 	}
-	return handler.PublishLinkWithTitle(title, shortlink)
+	return handler.PublishShortLinkWithTitle(title, shortlink)
 }
 
 // Publish Title and a Link  that will be shortlinked
 func (handler *TwitterHandler) PublishLinkWithTitle(title string, link string) (err error) {
+	shortlinkService := NewShortLinkService(handler.repo)
+	shortlink := shortlinkService.GenerateShortlinkWithTitle(link, title)
+	return handler.PublishShortLinkWithTitle(title, shortlink)
+}
+
+// Publish a Title with a shortlink
+func (handler *TwitterHandler) PublishShortLinkWithTitle(title string, link string) (err error) {
 	/**
-		Links uses 23 chars
-		So we have max 257 chars for tweet text. 1 chars for new line, so 256.
-		if the length of title is greater then 256 chars, then we need to append "..." so 256-3.
-	 */
+			Links uses 23 chars
+			So we have max 257 chars for tweet text. 1 chars for new line, so 256.
+			if the length of title is greater then 256 chars, then we need to append "..." so 256-3.
+		 */
 	if len(title) > 256 {
 		title = title[:256-4] + "..." //4 and not 3, because arrays start from 0.
 	}
 	tweet := title + "\n" + link
 	return handler.PublishTweet(tweet)
-}
-
-// Publish a Title with a shortlink
-func (handler *TwitterHandler) PublishShortLinkWithTitle(title string, link string) (err error) {
-	shortlinkService := NewShortLinkService(handler.repo)
-	shortlink := shortlinkService.GenerateShortlinkWithTitle(link, title)
-	return handler.PublishLinkWithTitle(title, shortlink)
-
 }
 
 // Publish a text tweet.
