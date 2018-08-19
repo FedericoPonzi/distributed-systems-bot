@@ -14,7 +14,7 @@ type TelegramHandler struct {
 
 
 func (handler *TelegramHandler) postUpdate(text string) string {
-	if !handler.containsLink(text) {
+	if !handler.isLink(text) {
 		return "Sorry at this time I can only share links for you!"
 	}
 	err := handler.twitterHandler.PublishLink(text)
