@@ -91,7 +91,7 @@ func (handler *TelegramHandler) defaultMessage(update tgbotapi.Update) (bool) {
 }
 
 func (handler *TelegramHandler) isLink(s string) bool {
-	re := regexp.MustCompile(`(?i)<\s*title\s*>\s*(.+)\s*<\s*/title\s*>`)
+	re := regexp.MustCompile(`(http:\/\/)*(https:\/\/)*([a-zA-Z1-9-]+\.)+([a-zA-Z1-9])+`)
 	return re.MatchString(s)
 }
 
