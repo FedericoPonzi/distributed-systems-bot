@@ -169,7 +169,8 @@ func (handler *TwitterHandler) PublishTweet(tweet string) (err error){
 		res, resp, err := handler.bot.Statuses.Update(tweet, nil)
 		fmt.Println(res, resp, err)
 		return err
+		//TODO: save tweet in db!
+
 	}
-	//TODO: save tweet in db!
 	return nil
 }

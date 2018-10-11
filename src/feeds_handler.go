@@ -22,6 +22,11 @@ type FeedHandler struct {
 	twitterHandler *TwitterHandler
 }
 
+type FeedUpdatedWorkUnit struct{
+	lastUpdated time.Time //Last updated from database
+	feed *FeedRssWrapper //Feed just fetched.
+}
+
 func NewFeedHandler (repo *MysqlRepository, twitterHandler *TwitterHandler) *FeedHandler {
 	return &FeedHandler{repo, twitterHandler}
 }
@@ -61,9 +66,14 @@ func (handler FeedHandler) getUpdatedFeedsItemWorker(jobs <-chan FeedUpdatedWork
 
 			log.Println(feed.id, ": Updated nill.")
 		}
+		fmt.Println("Last updated:" , lastUpdated, " feed updated:", feed.updated)
 		if lastUpdated.Before(*feed.updated) {
 			log.Println("(",j.feed.id,  ") has updates! Last tweeted post was from ", lastUpdated, " now is ", feed.updated)
 			for _, feedItem := range feed.items {
+				// Arxiv case. This feed is updated daily so the items haven't these fields.
+				if feedItem.PublishedParsed == nil && feedItem.UpdatedParsed == nil {
+					results <- *feedItem
+				}
 				if feedItem.PublishedParsed != nil && lastUpdated.Before(*feedItem.PublishedParsed) &&
 					!strings.Contains(feedItem.Title, "Sponsored"){
 					fmt.Println("This item is in queue for post:", feedItem.Link)
@@ -71,15 +81,12 @@ func (handler FeedHandler) getUpdatedFeedsItemWorker(jobs <-chan FeedUpdatedWork
 				}
 			}
 		}else {
-			log.Println("(",j.feed.id,  ") was updated after: ", lastUpdated, " is after: ", feed.updated)
+			log.Println("(",j.feed.id,  ") wasn't updated: ", lastUpdated, " is after: ", feed.updated)
 		}
 	}
 	wg.Done()
 }
-type FeedUpdatedWorkUnit struct{
-	lastUpdated time.Time
-	feed *FeedRssWrapper
-}
+
 
 /**
 	It will find, inside at the fetched feeds, what feed items need to be published. It will use `getUpdatedFeedsItemWorker`
@@ -91,11 +98,12 @@ func (handler FeedHandler) getUpdatedItems(feedsFetched[] *FeedRssWrapper) (feed
 	results := make(chan gofeed.Item, 100)
 	wg := new(sync.WaitGroup)
 
+	// Spawn workers
 	for w := 0; w < 4; w++ {
 		wg.Add(1)
 		go handler.getUpdatedFeedsItemWorker(jobs, results, wg)
 	}
-
+	// Send work
 	for _, feed := range feedsFetched {
 		lastUpdated := handler.repo.GetLastFeedRssUpdatedByFeedId(feed.id)
 		jobs <- FeedUpdatedWorkUnit{lastUpdated: lastUpdated, feed:feed}
@@ -103,12 +111,14 @@ func (handler FeedHandler) getUpdatedItems(feedsFetched[] *FeedRssWrapper) (feed
 	log.Println("done sending jobs.")
 	close(jobs)
 
+	//Wait for results
 	go func() {
 		wg.Wait()
 		log.Println("I'm done waiting.")
 		close(results)
 	}()
 
+	//Fetch results
 	for res := range results {
 		feedItemsToPublish = append(feedItemsToPublish, res)
 	}
@@ -151,6 +161,7 @@ func (handler FeedHandler) fetchAllRss() (feedsFetched [] *FeedRssWrapper) {
 	A worker to fetch a single rss feed.
  */
 func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) {
+
 	log.Println("I'm gonna fetch: ", rss.Url())
 	url := rss.Url()
 	fp := gofeed.NewParser()
@@ -164,6 +175,7 @@ func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) 
 
 	if feed.UpdatedParsed != nil {
 		updated = feed.UpdatedParsed
+		fmt.Println(feed.Title + " updated:"+ feed.Published);
 	}else {
 		// It may happen that there is no "updated" field. In this case, get the last post published date:
 		log.Println("Updated of [" + feed.Title + "] is nil, last article published: " + feed.Items[0].Published)
@@ -186,6 +198,7 @@ func (handler FeedHandler) saveLastFetched(feeds []*FeedRssWrapper) {
 func (handler FeedHandler) scheduleTweets(items []gofeed.Item) {
 
 	for _, item := range items {
-		handler.twitterHandler.PublishLinkWithTitle(item.Title, item.Link)
+		fmt.Println(item);
+		//handler.twitterHandler.PublishLinkWithTitle(item.Title, item.Link)
 	}
 }
