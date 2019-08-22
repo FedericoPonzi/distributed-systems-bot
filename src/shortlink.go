@@ -52,7 +52,10 @@ func (service *ShortlinkService) GenerateShortlink(link string) (shortlink strin
 		return "" ,"", err
 	}
 	id := service.generateId(title)
-	service.repo.AddShortlink(id, link)
+	err = service.repo.AddShortlink(id, link)
+	if err != nil {
+		return "","",err
+	}
 	return service.url + "/" + id, title, nil
 }
 

@@ -31,11 +31,12 @@ func main() {
 	fmt.Println(configPath)
 
 	config, err := LoadConfig(configPath)
-	config.Twitter.DryRun = dryRun
 
 	if err != nil {
 		log.Fatal("Error loading config: ", err)
 	}
+
+	config.Twitter.DryRun = dryRun
 
 	repo := NewMysqlRepository(config)
 
@@ -54,7 +55,7 @@ func main() {
 		return
 	}
 
-	if len(shortLink) > 0{
+	if len(shortLink) > 0 {
 		fmt.Println("I'm going to generate a shortlink for: " + shortLink + " just a sec...")
 		shortLinkService := NewShortLinkService(repo)
 		shortlink, title, _ := shortLinkService.GenerateShortlink(shortLink)

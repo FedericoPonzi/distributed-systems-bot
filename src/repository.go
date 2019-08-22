@@ -59,7 +59,7 @@ func (repo *MysqlRepository) Close() {
 func (repo *MysqlRepository) GetAllFeedRss() (toRet []*FeedRss) {
 	rows, err := repo.db.Query("select id, name, twitterHandle, url from feed_rss")
 	if err != nil {
-		log.Println("Error running getallfeedrss query: " + err.Error())
+		log.Fatal("Error running getallfeedrss query: " + err.Error())
 	}
 
 	defer rows.Close()

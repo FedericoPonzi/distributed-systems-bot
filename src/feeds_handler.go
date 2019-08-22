@@ -41,7 +41,7 @@ func (handler FeedHandler) Main() {
 	/** Save fetched rss results **/
 	handler.saveLastFetched(feeds)
 	if len(feedItemsToPublish) > 0 {
-		fmt.Println("There are item to publish.")
+		fmt.Println("There are ", len(feedItemsToPublish) , " items to publish.")
 	}else {
 		fmt.Println("There are no item to publish.")
 	}
@@ -63,8 +63,7 @@ func (handler FeedHandler) getUpdatedFeedsItemWorker(jobs <-chan FeedUpdatedWork
 		feed := j.feed
 
 		if feed.updated == nil {
-
-			log.Println(feed.id, ": Updated nill.")
+			log.Println(feed.id, ": Updated nill. Feed:" ,feed)
 		}
 		fmt.Println("Last updated:" , lastUpdated, " feed updated:", feed.updated)
 		if lastUpdated.Before(*feed.updated) {
@@ -89,7 +88,7 @@ func (handler FeedHandler) getUpdatedFeedsItemWorker(jobs <-chan FeedUpdatedWork
 
 
 /**
-	It will find, inside at the fetched feeds, what feed items need to be published. It will use `getUpdatedFeedsItemWorker`
+	It will find, inside at the fetched feeds, what feed items need to be published. Uses `getUpdatedFeedsItemWorker`
  */
 func (handler FeedHandler) getUpdatedItems(feedsFetched[] *FeedRssWrapper) (feedItemsToPublish []gofeed.Item ){
 
@@ -130,6 +129,7 @@ func (handler FeedHandler) getUpdatedItems(feedsFetched[] *FeedRssWrapper) (feed
 /**
    Downloads all the feeds rss.
    Gets the url from database, run a gorotuine for every url - maybe a fixed pool size would be better?
+   Also, maybe run in stream fashion ;)
  */
 func (handler FeedHandler) fetchAllRss() (feedsFetched [] *FeedRssWrapper) {
 	feedsRss := handler.repo.GetAllFeedRss()
@@ -178,8 +178,13 @@ func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) 
 		fmt.Println(feed.Title + " updated:"+ feed.Published);
 	}else {
 		// It may happen that there is no "updated" field. In this case, get the last post published date:
-		log.Println("Updated of [" + feed.Title + "] is nil, last article published: " + feed.Items[0].Published)
-		updated = feed.Items[0].PublishedParsed
+		if len(feed.Items) > 0 {
+			log.Println("Updated of [" + feed.Title + "] is nil. Last article published: " + feed.Items[0].Published)
+			updated = feed.Items[0].PublishedParsed
+		}else{
+			log.Println("Updated of [" + feed.Title + "] is nil. Apparently, feed.Items is empty. Please investigate.")
+			return
+		}
 	}
 	log.Println("Feed fetched for: " + rss.Url())
 	toRet := FeedRssWrapper{id: rss.Id(), twitterHandle:rss.TwitterHandle(), updated:updated, items:feed.Items}
