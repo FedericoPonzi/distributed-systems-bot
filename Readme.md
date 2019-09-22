@@ -12,7 +12,24 @@ This bot has the following aims:
         which feeds are more interesting for the users. [Done]
 
 ## 1. Feed RSS
+The feed rss is now powered by the feeds_handler module.
+
 
 ## 3. Telegram bot + post at
 Why telegram? Because I like the option to schedule a post by just sending a message on Telegram.
+I already use it to send links through telegram, but it's not possible to schedule tweets (yet).
 
+---
+
+## Deployment
+A systemd service for the telegram bot + crontab for recurring fetches.
+Example of crontab setup:
+ * `run.sh`:
+```bash
+#!/bin/bash
+/home/bots/distributed-systems-bot/bin/distributed-systems-bot --fetch-rss --config /home/bots/distributed-systems-bot/bin/config.yaml 2>&1 > /home/bots/distributed-systems-bot/logs/crontab-fetch-rss.out
+```
+ * example crontab:
+```
+0 * * * *       /home/bots/distributed-systems-bot/run.sh
+```
