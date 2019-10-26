@@ -1,14 +1,13 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
-_ "github.com/go-sql-driver/mysql"
-	"flag"
 	"strconv"
+
+	_ "github.com/go-sql-driver/mysql"
 )
-
-
 
 var configPath string
 var fetchRssRun bool
@@ -69,7 +68,6 @@ func main() {
 		handler.run()
 		return
 	}
-
 
 	//fmt.Println("Going to publish:", feedHandler.getUpdatedItems(feedHandler.fetchAllRss()))
 	//

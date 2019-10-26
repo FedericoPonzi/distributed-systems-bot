@@ -22,6 +22,7 @@ type FeedRss struct {
 	name          string
 	category      int
 }
+
 func (feed FeedRss) Url() string {
 	return feed.url
 }
