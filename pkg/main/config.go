@@ -1,4 +1,4 @@
-package main
+package pkg
 
 import (
 	"io/ioutil"
@@ -15,10 +15,12 @@ type TwitterConfig struct {
 	TokenSecret   string `yaml:"tokenSecret"`
 	DryRun        bool
 }
+
 type TelegramConfig struct {
 	ApiKey string `yaml:"apiKey"`
 	UserId int    `yaml:"userId"`
 }
+
 type MysqlConfig struct {
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
@@ -26,6 +28,7 @@ type MysqlConfig struct {
 	Port     string `yaml:"port"`
 	DbName   string `yaml:"dbName"`
 }
+
 type Config struct {
 	Twitter  TwitterConfig  `yaml:"twitter"`
 	Telegram TelegramConfig `yaml:"telegram"`

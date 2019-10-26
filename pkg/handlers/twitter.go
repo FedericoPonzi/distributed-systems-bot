@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"fmt"
@@ -8,12 +8,14 @@ import (
 	"syscall"
 	"time"
 
+	app "github.com/FedericoPonzi/distributed-systems-bot/pkg/main"
 	"github.com/dghubble/go-twitter/twitter"
+
 	"github.com/dghubble/oauth1"
 )
 
 type TwitterHandler struct {
-	repo   *MysqlRepository
+	repo   *app.MysqlRepository
 	bot    *twitter.Client
 	dryRun bool
 }
@@ -25,7 +27,7 @@ type Tweet struct {
 	published int8
 }
 
-func NewTwitterHandler(repo *MysqlRepository, config TwitterConfig) *TwitterHandler {
+func NewTwitterHandler(repo *app.MysqlRepository, config app.TwitterConfig) *TwitterHandler {
 
 	oauthConf := oauth1.NewConfig(config.Consumerkey, config.ConumerSecret)
 	token := oauth1.NewToken(config.Token, config.TokenSecret)
@@ -123,7 +125,7 @@ func (twitterHandler *TwitterHandler) runStreaming() {
 
 // Publish a shortlink.
 func (handler *TwitterHandler) PublishShortLink(shortlink string) (err error) {
-	shortlinkService := NewShortLinkService(handler.repo)
+	shortlinkService := app.NewShortLinkService(handler.repo)
 	title, err := shortlinkService.FetchTitle(shortlink)
 	if err != nil {
 		log.Println("Error fetching the title: " + err.Error())
@@ -134,7 +136,7 @@ func (handler *TwitterHandler) PublishShortLink(shortlink string) (err error) {
 
 // Publish a Link - that will be shortlinked TODO
 func (handler *TwitterHandler) PublishLink(link string) (err error) {
-	shortlinkService := NewShortLinkService(handler.repo)
+	shortlinkService := app.NewShortLinkService(handler.repo)
 	shortlink, title, err := shortlinkService.GenerateShortlink(link)
 	if err != nil {
 		log.Println("Error generating the shortlink!! " + err.Error())
@@ -145,7 +147,7 @@ func (handler *TwitterHandler) PublishLink(link string) (err error) {
 
 // Publish Title and a Link  that will be shortlinked
 func (handler *TwitterHandler) PublishLinkWithTitle(title string, link string) (err error) {
-	shortlinkService := (handler.repo)
+	shortlinkService := app.NewShortLinkService(handler.repo)
 	shortlink := shortlinkService.GenerateShortlinkWithTitle(link, title)
 	return handler.PublishShortLinkWithTitle(title, shortlink)
 }

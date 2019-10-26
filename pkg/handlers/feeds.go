@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	app "github.com/FedericoPonzi/distributed-systems-bot/pkg/main"
 	"github.com/mmcdole/gofeed"
 )
 
@@ -18,7 +19,7 @@ type FeedRssWrapper struct {
 }
 
 type FeedHandler struct {
-	repo           *MysqlRepository
+	repo           *app.MysqlRepository
 	twitterHandler *TwitterHandler
 }
 
@@ -27,7 +28,7 @@ type FeedUpdatedWorkUnit struct {
 	feed        *FeedRssWrapper //Feed just fetched.
 }
 
-func NewFeedHandler(repo *MysqlRepository, twitterHandler *TwitterHandler) *FeedHandler {
+func NewFeedHandler(repo *app.MysqlRepository, twitterHandler *TwitterHandler) *FeedHandler {
 	return &FeedHandler{repo, twitterHandler}
 }
 func (handler FeedHandler) Main() {
@@ -160,7 +161,7 @@ func (handler FeedHandler) fetchAllRss() (feedsFetched []*FeedRssWrapper) {
 /**
 A worker to fetch a single rss feed.
 */
-func (handler FeedHandler) fetchSingleRss(rss *FeedRss, c chan *FeedRssWrapper) {
+func (handler FeedHandler) fetchSingleRss(rss *app.FeedRss, c chan *FeedRssWrapper) {
 
 	log.Println("I'm gonna fetch: ", rss.Url())
 	url := rss.Url()

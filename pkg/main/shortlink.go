@@ -1,4 +1,4 @@
-package main
+package pkg
 
 import (
 	"errors"
@@ -7,9 +7,8 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"strings"
 
-	"github.com/marksalpeter/token"
+	"github.com/FedericoPonzi/distributed-systems-bot/util"
 )
 
 type ShortlinkService struct {
@@ -18,9 +17,9 @@ type ShortlinkService struct {
 }
 
 func NewShortLinkService(repo *MysqlRepository) *ShortlinkService {
-
 	return &ShortlinkService{repo: repo, url: "https://ds.fponzi.me"}
 }
+
 func (service *ShortlinkService) FetchTitle(link string) (title string, err error) {
 	res, err := http.Get(link)
 	if err != nil {
@@ -46,6 +45,7 @@ func (service *ShortlinkService) FetchTitle(link string) (title string, err erro
 	}
 	return string(re[1]), err
 }
+
 func (service *ShortlinkService) GenerateShortlink(link string) (shortlink string, title string, err error) {
 	title, err = service.FetchTitle(link)
 	if err != nil {
@@ -60,26 +60,12 @@ func (service *ShortlinkService) GenerateShortlink(link string) (shortlink strin
 }
 
 func (service *ShortlinkService) generateId(title string) string {
-	return randString(6) + "-" + formatTitleForUrl(title, 43) //total: 50
+	return util.RandString(6) + "-" + util.FormatTitleForUrl(title, 43) //total: 50
 }
+
 func (service *ShortlinkService) GenerateShortlinkWithTitle(link string, title string) string {
 	id := service.generateId(title)
 	log.Println("Generated id: " + id)
 	service.repo.AddShortlink(id, link)
 	return service.url + "/" + id
-}
-
-func formatTitleForUrl(title string, maxlength int) (url string) {
-	url = strings.ToLower(title)
-	if len(url) > maxlength {
-		url = url[:maxlength-1]
-	}
-	reg := regexp.MustCompile("[^a-zA-Z ]*")
-	url = reg.ReplaceAllString(url, "")
-	url = strings.Replace(url, " ", "-", -1)
-	return url
-}
-
-func randString(maxChars int) string {
-	return token.New(maxChars).Encode()
 }

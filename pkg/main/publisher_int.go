@@ -1,4 +1,4 @@
-package main
+package pkg
 
 type Publisher interface {
 	publishText() error

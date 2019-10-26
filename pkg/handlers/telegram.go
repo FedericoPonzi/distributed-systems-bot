@@ -1,8 +1,10 @@
-package main
+package handlers
 
 import (
+	app "github.com/FedericoPonzi/distributed-systems-bot/pkg/main"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
+
 	"regexp"
 )
 
@@ -32,7 +34,7 @@ func (handler *TelegramHandler) postUpdate(text string) string {
 
 }
 
-func NewTelegramHandler(config TelegramConfig, twitterHandler *TwitterHandler) (toRet TelegramHandler) {
+func NewTelegramHandler(config app.TelegramConfig, twitterHandler *TwitterHandler) (toRet TelegramHandler) {
 	bot, err := tgbotapi.NewBotAPI(config.ApiKey)
 	if err != nil {
 		log.Panic(err)
@@ -45,7 +47,7 @@ func NewTelegramHandler(config TelegramConfig, twitterHandler *TwitterHandler) (
 	return toRet
 }
 
-func (handler *TelegramHandler) run() {
+func (handler *TelegramHandler) Run() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates, err := handler.botApi.GetUpdatesChan(u)
