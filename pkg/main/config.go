@@ -1,10 +1,11 @@
-package main
+package pkg
 
 import (
-	"github.com/go-yaml/yaml"
 	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/go-yaml/yaml"
 )
 
 type TwitterConfig struct {
@@ -12,12 +13,14 @@ type TwitterConfig struct {
 	ConumerSecret string `yaml:"consumerSecret"`
 	Token         string `yaml:"token"`
 	TokenSecret   string `yaml:"tokenSecret"`
-	DryRun		  bool
+	DryRun        bool
 }
+
 type TelegramConfig struct {
 	ApiKey string `yaml:"apiKey"`
 	UserId int    `yaml:"userId"`
 }
+
 type MysqlConfig struct {
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
@@ -25,6 +28,7 @@ type MysqlConfig struct {
 	Port     string `yaml:"port"`
 	DbName   string `yaml:"dbName"`
 }
+
 type Config struct {
 	Twitter  TwitterConfig  `yaml:"twitter"`
 	Telegram TelegramConfig `yaml:"telegram"`

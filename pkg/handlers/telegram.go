@@ -1,17 +1,18 @@
-package main
+package handlers
 
 import (
-	"log"
+	app "github.com/FedericoPonzi/distributed-systems-bot/pkg/main"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"log"
+
 	"regexp"
 )
 
 type TelegramHandler struct {
-	botApi *tgbotapi.BotAPI
-	userId int
+	botApi         *tgbotapi.BotAPI
+	userId         int
 	twitterHandler *TwitterHandler
 }
-
 
 func (handler *TelegramHandler) postUpdate(text string) string {
 	if !handler.isLink(text) {
@@ -33,9 +34,8 @@ func (handler *TelegramHandler) postUpdate(text string) string {
 
 }
 
-
-func NewTelegramHandler(config TelegramConfig, twitterHandler *TwitterHandler) (toRet TelegramHandler) {
-	bot, err := tgbotapi.NewBotAPI(config.ApiKey);
+func NewTelegramHandler(config app.TelegramConfig, twitterHandler *TwitterHandler) (toRet TelegramHandler) {
+	bot, err := tgbotapi.NewBotAPI(config.ApiKey)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -47,9 +47,7 @@ func NewTelegramHandler(config TelegramConfig, twitterHandler *TwitterHandler) (
 	return toRet
 }
 
-
-
-func (handler *TelegramHandler) run(){
+func (handler *TelegramHandler) Run() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates, err := handler.botApi.GetUpdatesChan(u)
@@ -57,7 +55,7 @@ func (handler *TelegramHandler) run(){
 		log.Fatal("TelegramHandler: impossible to get updates.")
 	}
 	for update := range updates {
-		if update.Message == nil ||  handler.defaultMessage(update) {
+		if update.Message == nil || handler.defaultMessage(update) {
 			continue
 		}
 
@@ -76,12 +74,12 @@ func (handler *TelegramHandler) run(){
 	}
 }
 
-func (handler *TelegramHandler) defaultMessage(update tgbotapi.Update) (bool) {
+func (handler *TelegramHandler) defaultMessage(update tgbotapi.Update) bool {
 	if update.Message.From.ID != handler.userId {
-		resp := tgbotapi.NewMessage(update.Message.Chat.ID, "Hello there! " +
-			"\nSorry, but at the moment I can't do anything useful for you." +
-			"\nI'll go open source in the future, but I'm just not ready yet :) " +
-			"\nIn the meanwhile, if you're interested in Distributed Systems, " +
+		resp := tgbotapi.NewMessage(update.Message.Chat.ID, "Hello there! "+
+			"\nSorry, but at the moment I can't do anything useful for you."+
+			"\nI'll go open source in the future, but I'm just not ready yet :) "+
+			"\nIn the meanwhile, if you're interested in Distributed Systems, "+
 			"feel free to follow me on https://twitter.com/DistribSystems")
 		resp.ReplyToMessageID = update.Message.MessageID
 		handler.botApi.Send(resp)
@@ -94,4 +92,3 @@ func (handler *TelegramHandler) isLink(s string) bool {
 	re := regexp.MustCompile(`(http:\/\/)*(https:\/\/)*([a-zA-Z1-9-]+\.)+([a-zA-Z1-9])+`)
 	return re.MatchString(s)
 }
-

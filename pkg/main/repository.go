@@ -1,4 +1,4 @@
-package main
+package pkg
 
 import (
 	"database/sql"
@@ -11,7 +11,6 @@ type MysqlRepository struct {
 }
 
 func NewMysqlRepository(config *Config) (mysqlRepository *MysqlRepository) {
-
 	return &MysqlRepository{connectDb(config.GetDbConnectionString())}
 }
 
@@ -22,9 +21,11 @@ type FeedRss struct {
 	name          string
 	category      int
 }
+
 func (feed FeedRss) Url() string {
 	return feed.url
 }
+
 func (feed FeedRss) Id() int {
 	return feed.id
 }
@@ -87,6 +88,7 @@ func (repo *MysqlRepository) FindFeedRssIdByUrl(url string) (id int) {
 	}
 	return id
 }
+
 func (repo *MysqlRepository) AddFeedRssVisited(feed_id int, updated *time.Time) {
 	stmt, err := repo.db.Prepare("INSERT INTO feed_rss_visited(feed_id,updated) VALUES(?,?)")
 	if err != nil {
@@ -112,6 +114,7 @@ func (repo *MysqlRepository) GetLastFeedRssUpdatedByFeedId(id int) (t time.Time)
 
 	return t
 }
+
 func (repo MysqlRepository) AddShortlink(id string, url string) error {
 	stmt, err := repo.db.Prepare("INSERT INTO shortlink(uuid, url) VALUES(?,?)")
 	if err != nil {

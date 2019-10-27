@@ -1,30 +1,33 @@
-package main
+package handlers
 
 import (
-	"github.com/dghubble/oauth1"
-	"github.com/dghubble/go-twitter/twitter"
-	"log"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	app "github.com/FedericoPonzi/distributed-systems-bot/pkg/main"
+	"github.com/dghubble/go-twitter/twitter"
+
+	"github.com/dghubble/oauth1"
 )
 
 type TwitterHandler struct {
-	repo *MysqlRepository
-	bot *twitter.Client
+	repo   *app.MysqlRepository
+	bot    *twitter.Client
 	dryRun bool
 }
 
 type Tweet struct {
-	id int
-	tweet string
-	posted time.Time
+	id        int
+	tweet     string
+	posted    time.Time
 	published int8
 }
 
-func NewTwitterHandler(repo * MysqlRepository, config TwitterConfig) *TwitterHandler {
+func NewTwitterHandler(repo *app.MysqlRepository, config app.TwitterConfig) *TwitterHandler {
 
 	oauthConf := oauth1.NewConfig(config.Consumerkey, config.ConumerSecret)
 	token := oauth1.NewToken(config.Token, config.TokenSecret)
@@ -36,7 +39,7 @@ func NewTwitterHandler(repo * MysqlRepository, config TwitterConfig) *TwitterHan
 
 	log.Println("Twitter bot initialized!")
 	return &TwitterHandler{bot: client, repo: repo,
-		dryRun:config.DryRun }
+		dryRun: config.DryRun}
 }
 
 func (twitterHandler *TwitterHandler) retweetAndLike(t *twitter.Tweet) {
@@ -44,8 +47,8 @@ func (twitterHandler *TwitterHandler) retweetAndLike(t *twitter.Tweet) {
 	if err != nil {
 		errStr := fmt.Sprint("Error twitting message:", tweet, resp)
 		log.Println(errStr)
-	}else {
-		log.Println("Succesfully retweeted!")
+	} else {
+		log.Println("Successfully retweeted!")
 	}
 	favourite := twitter.FavoriteCreateParams{t.ID}
 	twitterHandler.bot.Favorites.Create(&favourite)
@@ -69,7 +72,7 @@ func (twitterHandler *TwitterHandler) getFriendList() (toRet []twitter.User) {
 	return toRet
 }
 
-func (twitterHandler * TwitterHandler) runStreaming(){
+func (twitterHandler *TwitterHandler) runStreaming() {
 	//https://developer.twitter.com/en/docs/tweets/filter-realtime/guides/basic-stream-parameters
 	//https://developer.twitter.com/en/docs/tweets/filter-realtime/api-reference/post-statuses-filter
 	demux := twitter.NewSwitchDemux()
@@ -122,7 +125,7 @@ func (twitterHandler * TwitterHandler) runStreaming(){
 
 // Publish a shortlink.
 func (handler *TwitterHandler) PublishShortLink(shortlink string) (err error) {
-	shortlinkService := NewShortLinkService(handler.repo)
+	shortlinkService := app.NewShortLinkService(handler.repo)
 	title, err := shortlinkService.FetchTitle(shortlink)
 	if err != nil {
 		log.Println("Error fetching the title: " + err.Error())
@@ -133,7 +136,7 @@ func (handler *TwitterHandler) PublishShortLink(shortlink string) (err error) {
 
 // Publish a Link - that will be shortlinked TODO
 func (handler *TwitterHandler) PublishLink(link string) (err error) {
-	shortlinkService := NewShortLinkService(handler.repo)
+	shortlinkService := app.NewShortLinkService(handler.repo)
 	shortlink, title, err := shortlinkService.GenerateShortlink(link)
 	if err != nil {
 		log.Println("Error generating the shortlink!! " + err.Error())
@@ -144,7 +147,7 @@ func (handler *TwitterHandler) PublishLink(link string) (err error) {
 
 // Publish Title and a Link  that will be shortlinked
 func (handler *TwitterHandler) PublishLinkWithTitle(title string, link string) (err error) {
-	shortlinkService := NewShortLinkService(handler.repo)
+	shortlinkService := app.NewShortLinkService(handler.repo)
 	shortlink := shortlinkService.GenerateShortlinkWithTitle(link, title)
 	return handler.PublishShortLinkWithTitle(title, shortlink)
 }
@@ -152,10 +155,10 @@ func (handler *TwitterHandler) PublishLinkWithTitle(title string, link string) (
 // Publish a Title with a shortlink
 func (handler *TwitterHandler) PublishShortLinkWithTitle(title string, link string) (err error) {
 	/**
-			Links uses 23 chars
-			So we have max 257 chars for tweet text. 1 chars for new line, so 256.
-			if the length of title is greater then 256 chars, then we need to append "..." so 256-3.
-		 */
+	Links uses 23 chars
+	So we have max 257 chars for tweet text. 1 chars for new line, so 256.
+	if the length of title is greater then 256 chars, then we need to append "..." so 256-3.
+	*/
 	if len(title) > 256 {
 		title = title[:256-4] + "..." //4 and not 3, because arrays start from 0.
 	}
@@ -164,7 +167,7 @@ func (handler *TwitterHandler) PublishShortLinkWithTitle(title string, link stri
 }
 
 // Publish a text tweet.
-func (handler *TwitterHandler) PublishTweet(tweet string) (err error){
+func (handler *TwitterHandler) PublishTweet(tweet string) (err error) {
 	if !handler.dryRun {
 		res, resp, err := handler.bot.Statuses.Update(tweet, nil)
 		fmt.Println(res, resp, err)

@@ -1,14 +1,17 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
-_ "github.com/go-sql-driver/mysql"
-	"flag"
 	"strconv"
+
+	"github.com/FedericoPonzi/distributed-systems-bot/pkg/handlers"
+	app "github.com/FedericoPonzi/distributed-systems-bot/pkg/main"
+
+	// importing for side effects
+	_ "github.com/go-sql-driver/mysql"
 )
-
-
 
 var configPath string
 var fetchRssRun bool
@@ -30,7 +33,7 @@ func main() {
 	parseArgs()
 	fmt.Println(configPath)
 
-	config, err := LoadConfig(configPath)
+	config, err := app.LoadConfig(configPath)
 
 	if err != nil {
 		log.Fatal("Error loading config: ", err)
@@ -38,18 +41,18 @@ func main() {
 
 	config.Twitter.DryRun = dryRun
 
-	repo := NewMysqlRepository(config)
+	repo := app.NewMysqlRepository(config)
 
 	defer func() {
 		repo.Close()
 		log.Println("End of the execution. Thanks for playing :)")
 	}()
 
-	twitterHandler := NewTwitterHandler(repo, config.Twitter)
+	twitterHandler := handlers.NewTwitterHandler(repo, config.Twitter)
 	fmt.Println("Fetch-rss:", strconv.FormatBool(fetchRssRun), " , telegram: ", strconv.FormatBool(telegramBot))
 	if fetchRssRun {
 		fmt.Println("Running fetch rss command.")
-		feedHandler := NewFeedHandler(repo, twitterHandler)
+		feedHandler := handlers.NewFeedHandler(repo, twitterHandler)
 		feedHandler.Main()
 		fmt.Println("Done fetching feeds.")
 		return
@@ -57,7 +60,7 @@ func main() {
 
 	if len(shortLink) > 0 {
 		fmt.Println("I'm going to generate a shortlink for: " + shortLink + " just a sec...")
-		shortLinkService := NewShortLinkService(repo)
+		shortLinkService := app.NewShortLinkService(repo)
 		shortlink, title, _ := shortLinkService.GenerateShortlink(shortLink)
 		fmt.Println("Generated shortlink: " + shortlink + ", parsed title:" + title)
 		return
@@ -65,11 +68,10 @@ func main() {
 
 	if telegramBot {
 		fmt.Println("Running telegram bot.")
-		handler := NewTelegramHandler(config.Telegram, twitterHandler)
-		handler.run()
+		handler := handlers.NewTelegramHandler(config.Telegram, twitterHandler)
+		handler.Run()
 		return
 	}
-
 
 	//fmt.Println("Going to publish:", feedHandler.getUpdatedItems(feedHandler.fetchAllRss()))
 	//
