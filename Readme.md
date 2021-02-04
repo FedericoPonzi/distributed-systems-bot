@@ -1,7 +1,7 @@
 ## Distributed Systems bot
 @distribsystems
 
-This bot has the following aims:
+This bot has the following goals:
 
  1. Tweet links from feeds of interesting websites. [Done]
  1. Retweet and like "interesting" tweets
